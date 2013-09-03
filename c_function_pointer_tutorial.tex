@@ -1,0 +1,51 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{xeCJK}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{xunicode}%
+\usepackage{xltxtra} 
+\usepackage{fontspec}
+\usepackage[top=1 in,bottom=1 in,left=1.25in,right=1.25in]{geometry}
+\pagestyle{fancy}
+%\usepackage[center,pagestyles]{titlesec}
+%\titleformat{\section}{\centering\Large\bfseries}{\S\,\thesection}{1em}{}
+%\titleformat{\subsection}{\large\bfseries}{\S\,\thesubsection}{1em}{}
+\setCJKmainfont[BoldFont=STHeiti]{SimSun}
+%\setromanfont{Kai} % 楷体
+\setromanfont{STFangsong} % 楷体
+\newfontfamily{\K}{BiauKai}
+\setmonofont[Scale=0.8]{Courier New} % 等寬字型
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+
+\newcommand{\tab}[1]{\hspace{.2\textwidth}\rlap{#1}}
+
+
+\setromanfont[Mapping=tex-text, %
+Ligatures={Required,Common}, %
+ItalicFont={Times Italic}, %
+BoldFont={Apple LiGothic Medium}]%
+{BiauKai}
+
+\newfontinstance\rmfont{Times} \newcommand{\nc}[1]{{\rmfont #1}}
+\usepackage[parfill]{parskip}
+\usepackage[parfill]{parskip}
+
+\begin{document}
+\fancyhead{}
+\renewcommand{\headrulewidth}{0pt}
+%\maketitle
+\begin{center}
+\textbf{\huge{C语言函数指针教程}}\\
+作者：Lars Haendel\\
+2005年1月，德国波鸿\\
+\href{http://www.newty.de/}{http://www.newty.de/}\\
+email: 请到网站查看\\
+GNU许可
+\end{center}
+
+\tableofcontents
+
+\section{什么是函数指针}
+函数指针是非常高效有趣和优雅的编程技巧。你可以用它来替代switch/if语句，来实现你的后期绑定和函数回调。但是，由于它的语法的复杂程度，它在很多计算机书籍和文档中不受待见。即使提到了，也都是很浅的一笔带过。因为你不需要为它分配和收回内存，它造成错误的概率要比普通指针低很多。所有你需要做的就是搞清楚它的意义和相关的语法。但是要搞清楚：你是否真的需要一个函数指针来完成任务。实现自己的后期绑定很漂亮，但如果使用C++现有的结构和方法或许会让你的代码可读性更高。后期绑定的应用场景在运行时，如果你调用了一个普通函数，你的代码需要知道调用哪个函数。它用一个包含所有可能被调用的函数的V-Table。每次调用将会消耗一些性能，你可以用函数指针来代替普通函数来解决这个问题，也许不需要\footnote{现代的编译器已经非常出色。用我的Borland，我可以节省。。。}
+\end{document}
