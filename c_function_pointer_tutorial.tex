@@ -1,4 +1,6 @@
 \documentclass[11pt,a4paper]{article}
+\usepackage{color}
+\usepackage{listings}
 \usepackage{xeCJK}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
@@ -10,13 +12,18 @@
 %\usepackage[center,pagestyles]{titlesec}
 %\titleformat{\section}{\centering\Large\bfseries}{\S\,\thesection}{1em}{}
 %\titleformat{\subsection}{\large\bfseries}{\S\,\thesubsection}{1em}{}
-\setCJKmainfont[BoldFont=STHeiti]{SimSun}
+\setCJKmainfont[BoldFont=STHeiti,ItalicFont=STKaiti]{SimSun}
+%\setCJKmainfont[BoldFont=STHeiti]{SimSun}
 %\setromanfont{Kai} % 楷体
 \setromanfont{STFangsong} % 楷体
 \newfontfamily{\K}{BiauKai}
 \setmonofont[Scale=0.8]{Courier New} % 等寬字型
 \XeTeXlinebreaklocale "zh"
 \XeTeXlinebreakskip = 0pt plus 1pt minus 0.1pt
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
 
 \newcommand{\tab}[1]{\hspace{.2\textwidth}\rlap{#1}}
 
@@ -46,6 +53,102 @@ GNU许可
 
 \tableofcontents
 
-\section{什么是函数指针}
+\section{函数指针介绍}
 函数指针是非常高效有趣和优雅的编程技巧。你可以用它来替代switch/if语句，来实现你的后期绑定和函数回调。但是，由于它的语法的复杂程度，它在很多计算机书籍和文档中不受待见。即使提到了，也都是很浅的一笔带过。因为你不需要为它分配和收回内存，它造成错误的概率要比普通指针低很多。所有你需要做的就是搞清楚它的意义和相关的语法。但是要搞清楚：你是否真的需要一个函数指针来完成任务。实现自己的后期绑定很漂亮，但如果使用C++现有的结构和方法或许会让你的代码可读性更高。后期绑定的应用场景在运行时，如果你调用了一个普通函数，你的代码需要知道调用哪个函数。它用一个包含所有可能被调用的函数的V-Table。每次调用将会消耗一些性能，你可以用函数指针来代替普通函数来解决这个问题，也许不需要\footnote{现代的编译器已经非常出色。用我的Borland，我可以节省。。。}
+
+
+\subsection{什么是函数指针}
+当你在程序中一个叫做\textit{标记}的点调用一个函数 \textit{DoIt()} 的时候，你只需要把函数的调用放到程序源码的\textit{标记}处，之后你每次编译代码到这个位置，这个方法将被执行，一切都很正常。但是如果你不想在编译的时候确定哪个函数应该被调用需要怎么做？你可能希望在程序运行的时候再决定什么函数应该被调用。或者你希望使用回调函数或在一个函数池中选择一个合适的来执行。当然，可以使用\textit{switch}语句来实现后一种效果，在不同的条件分支中调用你想用的函数。但是还有其它的方法可以实现这个目标：使用函数指针！在下面的例子中，我们将实现一个加减乘除的4种数学运算。首先来用一个\textit{switch语法}来解决这个问题，然后再用函数指针的方式实现同样的目标\footnote{这是个非常简单的例子，所以应该不会有人来用函数指针来实际解决这个问题}。
+
+\lstdefinestyle{customc}{
+    breaklines=true,
+        frame=L,
+        xleftmargin=\parindent,
+        language=C,
+        showstringspaces=false,
+        basicstyle=\footnotesize\ttfamily,
+        keywordstyle=\color{green},
+        %commentstyle=\color{dark},
+        identifierstyle=\color{blue},
+}
+\lstset{escapechar=@,style=customc}
+
+\begin{lstlisting}
+//----------------------------------------------
+// 1.2 例子：如何取代一个switch-case
+// 任务：用＋、－、×、/ 实现一个数学运算
+
+
+// 四种运算符 ... 下面的一个函数将被使用
+// 在运行时靠一个switch来选择或使用函数指针
+float Plus    (float a, float b) { return a+b; }
+float Minus   (float a, float b) { return a-b; }
+float Multiply(float a, float b) { return a*b; }
+float Divide  (float a, float b) { return a/b; }
+
+
+// switch的解决方法 - <运算符> 将决定执行哪个操作
+void Switch(float a, float b, char opCode)
+{
+   float result;
+
+   // 执行操作
+   switch(opCode)
+   {
+      case '+' : result = Plus     (a, b); break;
+      case '-' : result = Minus    (a, b); break;
+      case '*' : result = Multiply (a, b); break;
+      case '/' : result = Divide   (a, b); break;
+   }
+
+   cout << "Switch: 2+5=" << result << endl;         // display result
+}
+
+
+// 使用函数指针的解决方法 - <pt2Func> 是一个指向接受2个浮点数为参数，返回一个浮点数
+// 的函数。这个指针函数将决定哪个操作应该被执行
+void Switch_With_Function_Pointer(float a, float b, float (*pt2Func)(float, float))
+{
+   float result = pt2Func(a, b);    // call using function pointer
+
+   cout << "Switch replaced by function pointer: 2-5=";  // display result
+   cout << result << endl;
+}
+
+
+// 执行示例代码
+void Replace_A_Switch()
+{
+   cout << endl << "Executing function 'Replace_A_Switch'" << endl;
+
+   Switch(2, 5, /* '+' specifies function 'Plus' to be executed */ '+');
+   Switch_With_Function_Pointer(2, 5, /* pointer to function 'Minus' */ &Minus);
+}
+\end{lstlisting}
+
+\emph{重要提示：}每个函数指针总是指向特定特征的函数！对于一个函数指针，所有使用它的函数必须有相同类型的参数和返回值！
+\section{函数指针的C和C++的语法}
+根据这2个语言的语法，有2种类型的函数指针：一种是指向普通的C语言的函数，或指向C++的静态成员函数。另外一种是指向C++的\emph{非静态}成员函数。基本的区别是所有指向非静态成员函数的需要一个隐藏的参数：一个指向某个实例的\textit{this}指针\footnote{原文：this-pointer}。一定要搞清楚，这两种类型的指针是不相容的。
+\subsection{定义一个函数指针}
+一个函数指针只不过是一个变量，它必须像其它变量一样先声明。在下面的例子里我们声明2个函数指针，分别是\textit{pt2Function, pt2Member} 和\textit{pt2ConstMember}。他们指向函数，这个函数以一个浮点数和2个字符作为参数并返回一个整数。在C++例子中我们假设我们指向的函数是类\textit{TMyClass}中的非静态成员。
+
+\begin{lstlisting}
+// 2.1 定义一个函数指针并初始化为NULL
+int (*pt2Function)(float, char, char) = NULL;                        // C
+int (TMyClass::*pt2Member)(float, char, char) = NULL;                // C++
+int (TMyClass::*pt2ConstMember)(float, char, char) const = NULL;     // C++
+\end{lstlisting}
+
+\subsection{调用约定}
+通常你不需要关心函数的调用约定：如果你没有特别的指定另外的约定，编译器会将\textit{\_\_cdecl}作为默认约定。如果你相了解更多，继续往下读。调用约定会告诉编译器怎样传递参数和怎样产生一个函数的名字。其它约定的例子有\textit{\_\_stdcall, \_\_pascal, \_\_fastcall}。调用约定属于一个函数的特征：\emph{不同调用约定的函数和函数指针互相间是不兼容的！}对于Borland和微软的编译器，你指定一个特别的调用约定在返回类型和函数或函数指针名之间。对于GNU GCC来说，使用\textit{\_\_attribute\_\_}关键字：定义函数时要接关键字\textit{\_\_attribute\_\_}并用双大括号描述。\footnote{如果你想了解更多：告诉我。如果你想知道函数调用在钩子下是如何工作的，你可以看Paul Carter的PC汇编教程的子程序（Subprograms）那个章节。}
+\begin{lstlisting}
+// 2.2 define the calling convention
+void __cdecl DoIt(float a, char b, char c);                             // Borland and Microsoft
+void         DoIt(float a, char b, char c)  __attribute__((cdecl));     // GNU GCC
+\end{lstlisting}
+\subsection{给函数指针分配一个地址}
+给函数指针分配一个地址是非常简单的。
+
+
+
 \end{document}
