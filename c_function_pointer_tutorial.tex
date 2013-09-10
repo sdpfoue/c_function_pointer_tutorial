@@ -147,7 +147,187 @@ void __cdecl DoIt(float a, char b, char c);                             // Borla
 void         DoIt(float a, char b, char c)  __attribute__((cdecl));     // GNU GCC
 \end{lstlisting}
 \subsection{给函数指针分配一个地址}
-给函数指针分配一个地址是非常简单的。
+给函数指针分配一个地址是非常简单的。你只需要选择一个合适的名字并且知道函数或成员函数的名字。对于大部分编译器来说地址符\&是可选的。你需要知道函数的名称和类名，并且你可以访问函数内部。
+
+\begin{lstlisting}
+// 2.3 assign an address to the function pointer
+//     Note: Although you may ommit the address operator on most compilers
+//     you should always use the correct way in order to write portable code.
+
+// C
+int DoIt  (float a, char b, char c){ printf("DoIt\n");   return a+b+c; }
+int DoMore(float a, char b, char c)const{ printf("DoMore\n"); return a-b+c; }
+
+pt2Function = DoIt;      // short form
+pt2Function = &DoMore;   // correct assignment using address operator
+
+
+// C++
+class TMyClass
+{
+public:
+   int DoIt(float a, char b, char c){ cout << "TMyClass::DoIt"<< endl; return a+b+c;};
+   int DoMore(float a, char b, char c) const
+         { cout << "TMyClass::DoMore" << endl; return a-b+c; };
+
+   /* more of TMyClass */
+};
+
+pt2ConstMember = &TMyClass::DoMore; // correct assignment using address operator
+pt2Member = &TMyClass::DoIt; // note: <pt2Member> may also legally point to &DoMore
+\end{lstlisting}
+
+\subsection{比较函数指针}
+你可以像往常一样使用比较符（==, !=）。下面的例子将会查检\textit{pt2Function}和\textit{pt2ConstMember}是否包含\textit{DoIt}和\textit{TMyClass::DoMore}的地址。如果相等会输出一段文字。
+\begin{lstlisting}
+// 2.4 comparing function pointers
+
+// C
+if(pt2Function >0){                           // check if initialized
+   if(pt2Function == &DoIt)
+      printf("Pointer points to DoIt\n"); }
+else
+   printf("Pointer not initialized!!\n");
+
+
+// C++
+if(pt2ConstMember == &TMyClass::DoMore)
+   cout << "Pointer points to TMyClass::DoMore" << endl;
+\end{lstlisting}
+
+\subsection{用函数指针调用函数}
+在C语言中可以通过*号和一个函数指针来调用函数。你也可以直接使用函数指针来替代函数的名字。在C++中的2种操作符“.*”，“->*”在类的实例上来调用一个非静态成员方法。如果调用发生在另一个成员函数内部你还需要使用\textit{this}。
+\begin{lstlisting}
+// 2.5 calling a function using a function pointer
+int result1 = pt2Function    (12, ’a’, ’b’);
+int result2 = (*pt2Function) (12, ’a’, ’b’);
+TMyClass instance1;
+int result3 = (instance1.*pt2Member)(12, ’a’, ’b’);
+int result4 = (*this.*pt2Member)(12, ’a’, ’b’);
+// C short way
+// C
+// C++
+// C++ if this-pointer can be used
+TMyClass* instance2 = new TMyClass;
+int result4 = (instance2->*pt2Member)(12, ’a’, ’b’);  // C++, instance2 is a pointer
+delete instance2;
+\end{lstlisting}
+
+\subsection{如果把函数指针作为一个函数参数}
+你可以把函数指针作为一个函数参数来使用。比如，你可能需要把函数指针当作回调函数来使用。下面代码将示例如何把函数指针传入另一个函数，并将一个float和2个char作为参数，一个int作为返回值：
+\begin{lstlisting}
+//------------------------------------------------------------------------------------
+// 2.6 How to Pass a Function Pointer
+// <pt2Func> is a pointer to a function which returns an int and takes a float and two char
+void PassPtr(int (*pt2Func)(float, char, char))
+{
+       int result = (*pt2Func)(12, ’a’, ’b’);     // call using function pointer
+          cout << result << endl;
+}
+// execute example code - ’DoIt’ is a suitable function like defined above in 2.1-4
+void Pass_A_Function_Pointer()
+{
+       cout << endl << "Executing ’Pass_A_Function_Pointer’" << endl;
+          PassPtr(&DoIt);
+}
+\end{lstlisting}
+\subsection{怎样返回一个函数指针}
+函数指针同样可以作为函数的返回值。下面的例子有2种方式演示如何返回函数指针。第一个返回的函数指针需要2个float参数，并返回一个float。如果你想返回一个指向成员函数的指针，你需要修改所有函数指针的定义声明。
+\begin{lstlisting}
+//------------------------------------------------------------------------------------
+// 2.7 How to Return a Function Pointer
+//     ’Plus’ and ’Minus’ are defined above. They return a float and take two float
+// Direct solution: Function takes a char and returns a pointer to a
+// function which is taking two floats and returns a float. <opCode>
+// specifies which function to return
+float (*GetPtr1(const char opCode))(float, float){
+   if(opCode == ’+’)
+      return &Plus;
+   else
+      return &Minus;} // default if invalid operator was passed
+// Solution using a typedef: Define a pointer to a function which is taking
+// two floats and returns a float
+typedef float(*pt2Func)(float, float);
+// Function takes a char and returns a function pointer which is defined
+// with the typedef above. <opCode> specifies which function to return
+pt2Func GetPtr2(const char opCode)
+{
+   if(opCode == ’+’)
+      return &Plus;
+   else
+      return &Minus; // default if invalid operator was passed
+}
+// Execute example code
+void Return_A_Function_Pointer()
+{
+   cout << endl << "Executing ’Return_A_Function_Pointer’" << endl;
+   // define a function pointer and initialize it to NULL
+   float (*pt2Function)(float, float) = NULL;
+   pt2Function=GetPtr1(’+’);   // get function pointer from function ’GetPtr1’
+   cout << (*pt2Function)(2, 4) << endl;   // call function using the pointer
+   pt2Function=GetPtr2(’-’);   // get function pointer from function ’GetPtr2’
+   cout << (*pt2Function)(2, 4) << endl;   // call function using the pointer
+}
+\end{lstlisting}
+\subsection{怎样使用一个数组的函数指针}
+操作一个数组的函数指针非常有意思。它使你可以使用数组的索引来使用函数。语法看上去比较复杂，经常会引起混乱。下面你将看到2种方式来定义和使用一个数组的函数，分别由C和C++来实现。第一种方式使用\textit{typedef}来实现，第二种方式直接定义数组。你可以根据自己的喜好来选择实现方式。
+\begin{lstlisting}
+//------------------------------------------------------------------------------------
+// 2.8 How to Use Arrays of Function Pointers
+// C ---------------------------------------------------------------------------------
+// type-definition: ’pt2Function’ now can be used as type
+typedef int (*pt2Function)(float, char, char);
+// illustrate how to work with an array of function pointers
+void Array_Of_Function_Pointers()
+{
+   printf("\nExecuting ’Array_Of_Function_Pointers’\n");
+   // define arrays and ini each element to NULL, <funcArr1> and <funcArr2> are arrays
+   // with 10 pointers to functions which return an int and take a float and two char
+   // first way using the typedef
+   pt2Function funcArr1[10] = {NULL};
+   // 2nd way directly defining the array
+   int (*funcArr2[10])(float, char, char) = {NULL};
+   // assign the function’s address - ’DoIt’ and ’DoMore’ are suitable functions
+   // like defined above in 2.1-4
+   funcArr1[0] = funcArr2[1] = &DoIt;
+   funcArr1[1] = funcArr2[0] = &DoMore;
+   /* more assignments */
+   // calling a function using an index to address the function pointer
+   printf("%d\n", funcArr1[1](12, ’a’, ’b’));         //  short form
+   printf("%d\n", (*funcArr1[0])(12, ’a’, ’b’));      // "correct" way of calling
+   printf("%d\n", (*funcArr2[1])(56, ’a’, ’b’));
+   printf("%d\n", (*funcArr2[0])(34, ’a’, ’b’));
+}
+// C++ -------------------------------------------------------------------------------
+// type-definition: ’pt2Member’ now can be used as type
+typedef int (TMyClass::*pt2Member)(float, char, char);
+// illustrate how to work with an array of member function pointers
+void Array_Of_Member_Function_Pointers()
+{
+   cout << endl << "Executing ’Array_Of_Member_Function_Pointers’" << endl;
+   // define arrays and ini each element to NULL, <funcArr1> and <funcArr2> are
+   // arrays with 10 pointers to member functions which return an int and take
+   // a float and two char
+   // first way using the typedef
+   pt2Member funcArr1[10] = {NULL};
+   // 2nd way of directly defining the array
+   int (TMyClass::*funcArr2[10])(float, char, char) = {NULL};
+   // assign the function’s address - ’DoIt’ and ’DoMore’ are suitable member
+   //  functions of class TMyClass like defined above in 2.1-4
+   funcArr1[0] = funcArr2[1] = &TMyClass::DoIt;
+   funcArr1[1] = funcArr2[0] = &TMyClass::DoMore;
+   /* more assignments */
+   // calling a function using an index to address the member function pointer
+   // note: an instance of TMyClass is needed to call the member functions
+   TMyClass instance;
+   cout << (instance.*funcArr1[1])(12, ’a’, ’b’) << endl;
+   cout << (instance.*funcArr1[0])(12, ’a’, ’b’) << endl;
+   cout << (instance.*funcArr2[1])(34, ’a’, ’b’) << endl;
+   cout << (instance.*funcArr2[0])(89, ’a’, ’b’) << endl;
+}
+\end{lstlisting}
+
+
 
 
 
